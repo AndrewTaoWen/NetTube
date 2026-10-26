@@ -6,10 +6,13 @@ import videoRoutes from "./routes/videos.js";
 import commentRoutes from "./routes/comments.js";
 import authRoutes from "./routes/auth.js";
 import cookieParser from "cookie-parser";
+import { rateLimit } from "express-rate-limit";
 
 
 const app = express();
 dotenv.config();
+if (!process.env.JWT || Buffer.byteLength(process.env.JWT) < 32) throw new Error("JWT must be a random secret of at least 32 bytes.");
+app.disable("x-powered-by");
 
 const connect = () => {
   mongoose
@@ -24,7 +27,8 @@ const connect = () => {
 
 //middlewares
 app.use(cookieParser())
-app.use(express.json());
+app.use(express.json({ limit: "32kb" }));
+app.use("/api/auth", rateLimit({ windowMs: 15 * 60 * 1000, limit: 30 }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/videos", videoRoutes);

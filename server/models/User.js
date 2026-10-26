@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema(
     subscribedUsers: {
       type: [String],
     },
+    firebaseUid: { type: String },
     fromGoogle: {
       type: Boolean,
       default: false,

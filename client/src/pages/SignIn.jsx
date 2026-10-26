@@ -90,23 +90,15 @@ const SignIn = () => {
 
   const signInWithGoogle = async () => {
     dispatch(loginStart());
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        axios
-          .post("/auth/google", {
-            name: result.user.displayName,
-            email: result.user.email,
-            img: result.user.photoURL,
-          })
-          .then((res) => {
-            console.log(res)
-            dispatch(loginSuccess(res.data));
-            navigate("/")
-          });
-      })
-      .catch((error) => {
-        dispatch(loginFailure());
-      });
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const res = await axios.post("/auth/google", { idToken });
+      dispatch(loginSuccess(res.data));
+      navigate("/");
+    } catch {
+      dispatch(loginFailure());
+    }
   };
 
   //TODO: REGISTER FUNCTIONALITY
