@@ -1,9 +1,15 @@
+const editableVideo = (body = {}) => Object.fromEntries(
+  ["title", "desc", "imgUrl", "videoUrl", "tags"]
+    .filter(key => Object.prototype.hasOwnProperty.call(body, key))
+    .map(key => [key, body[key]])
+);
+
 import User from "../models/User.js";
 import Video from "../models/Video.js";
 import { createError } from "../error.js";
 
 export const addVideo = async (req, res, next) => {
-  const newVideo = new Video({ userId: req.user.id, ...req.body });
+  const newVideo = new Video({ ...editableVideo(req.body), userId: req.user.id });
   try {
     const savedVideo = await newVideo.save();
     res.status(200).json(savedVideo);
@@ -20,9 +26,9 @@ export const updateVideo = async (req, res, next) => {
       const updatedVideo = await Video.findByIdAndUpdate(
         req.params.id,
         {
-          $set: req.body,
+          $set: editableVideo(req.body),
         },
-        { new: true }
+        { new: true, runValidators: true }
       );
       res.status(200).json(updatedVideo);
     } else {
@@ -115,9 +121,11 @@ export const getByTag = async (req, res, next) => {
 
 export const search = async (req, res, next) => {
   const query = req.query.q;
+  if (typeof query !== "string" || query.length > 200) return next(createError(400, "Invalid search query."));
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   try {
     const videos = await Video.find({
-      title: { $regex: query, $options: "i" },
+      title: { $regex: escaped, $options: "i" },
     }).limit(40);
     res.status(200).json(videos);
   } catch (err) {

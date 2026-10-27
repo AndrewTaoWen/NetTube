@@ -8,11 +8,12 @@ export const update = async (req, res, next) => {
       const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
         {
-          $set: req.body,
+          $set: Object.fromEntries(["name", "img"].filter(key => typeof req.body?.[key] === "string").map(key => [key, req.body[key]])),
         },
-        { new: true }
+        { new: true, runValidators: true }
       );
-      res.status(200).json(updatedUser);
+      const { password, email, firebaseUid, ...profile } = updatedUser.toObject();
+      res.status(200).json(profile);
     } catch (err) {
       next(err);
     }
@@ -37,7 +38,9 @@ export const deleteUser = async (req, res, next) => {
 export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    res.status(200).json(user);
+    if (!user) return next(createError(404, "User not found."));
+    const { password, email, firebaseUid, ...profile } = user.toObject();
+    res.status(200).json(profile);
   } catch (err) {
     next(err);
   }
